@@ -94,9 +94,15 @@
       transition: background-color 0.3s ease, box-shadow 0.3s ease;
     }
 
-    button:hover {
+    button:hover:not(:disabled) {
       background-color: #00a36c;
       box-shadow: 0 6px 18px rgba(0,163,108,0.7);
+    }
+
+    button:disabled {
+      background-color: #555;
+      cursor: not-allowed;
+      box-shadow: none;
     }
 
     .info-section {
@@ -125,6 +131,31 @@
       user-select: none;
     }
 
+    /* Messaggi di feedback */
+    .message {
+      padding: 12px 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-weight: 500;
+      display: none;
+    }
+
+    .message.success {
+      background-color: rgba(0, 179, 126, 0.2);
+      border: 1px solid #00b37e;
+      color: #00b37e;
+    }
+
+    .message.error {
+      background-color: rgba(220, 53, 69, 0.2);
+      border: 1px solid #dc3545;
+      color: #ff6b7a;
+    }
+
+    .message.show {
+      display: block;
+    }
+
     @media (max-width: 480px) {
       header h1 {
         font-size: 2.2rem;
@@ -151,9 +182,10 @@
   </header>
 
   <form id="waitlist-form">
-    <input type="text" name="name" placeholder="Il tuo nome" required autocomplete="name" />
-    <input type="email" name="email" placeholder="La tua email" required autocomplete="email" />
-    <button type="submit">Iscriviti alla lista d'attesa</button>
+    <div id="message" class="message"></div>
+    <input type="text" name="name" id="name" placeholder="Il tuo nome" required autocomplete="name" />
+    <input type="email" name="email" id="email" placeholder="La tua email" required autocomplete="email" />
+    <button type="submit" id="submit-btn">Iscriviti alla lista d'attesa</button>
   </form>
 
   <section class="info-section">
@@ -164,7 +196,114 @@
   </section>
 
   <script>
+    // Configurazione - SOSTITUISCI CON IL TUO URL DEL GOOGLE APPS SCRIPT
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyWEgWaoB-ItUGfxgYWfMFKqUxDFsDMQHOM-ZXJ9RIHxm5FcV-c60EHeuGSZIOm4q1qag/exec';
     
+    // Funzione per mostrare messaggi
+    function showMessage(text, type = 'success') {
+      const messageEl = document.getElementById('message');
+      messageEl.textContent = text;
+      messageEl.className = `message ${type} show`;
+      
+      // Nasconde il messaggio dopo 5 secondi
+      setTimeout(() => {
+        messageEl.classList.remove('show');
+      }, 5000);
+    }
+
+    // Gestione del form
+    document.getElementById('waitlist-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const submitBtn = document.getElementById('submit-btn');
+      const nameInput = document.getElementById('name');
+      const emailInput = document.getElementById('email');
+      
+      // Validazione di base
+      if (!nameInput.value.trim() || !emailInput.value.trim()) {
+        showMessage('Per favore compila tutti i campi', 'error');
+        return;
+      }
+      
+      // Validazione email
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(emailInput.value)) {
+        showMessage('Per favore inserisci un indirizzo email valido', 'error');
+        return;
+      }
+      
+      // Disabilita il pulsante durante l'invio
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Invio in corso...';
+      
+      try {
+        // Prepara i dati
+        const formData = new FormData();
+        formData.append('name', nameInput.value.trim());
+        formData.append('email', emailInput.value.trim());
+        formData.append('timestamp', new Date().toLocaleString('it-IT'));
+        
+        // Invia i dati (commentato perché serve il tuo script ID)
+        /*
+        const response = await fetch(SCRIPT_URL, {
+          method: 'POST',
+          body: formData
+        });
+        
+        if (response.ok) {
+          showMessage('Iscrizione completata! Ti contatteremo presto.', 'success');
+          nameInput.value = '';
+          emailInput.value = '';
+        } else {
+          throw new Error('Errore del server');
+        }
+        */
+        
+        // TEMPORANEO: Simula invio riuscito
+        // Rimuovi questa parte quando attivi Google Sheets
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        showMessage('Iscrizione completata! Ti contatteremo presto.', 'success');
+        nameInput.value = '';
+        emailInput.value = '';
+        
+        // Salva temporaneamente nei dati locali (rimuovi quando usi Google Sheets)
+        const existingData = JSON.parse(localStorage.getItem('waitlist') || '[]');
+        existingData.push({
+          name: formData.get('name'),
+          email: formData.get('email'),
+          timestamp: formData.get('timestamp')
+        });
+        localStorage.setItem('waitlist', JSON.stringify(existingData));
+        
+      } catch (error) {
+        console.error('Errore:', error);
+        showMessage('Si è verificato un errore. Riprova più tardi.', 'error');
+      } finally {
+        // Riabilita il pulsante
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Iscriviti alla lista d\'attesa';
+      }
+    });
+    
+    // Funzione per esportare i dati (solo per test locale)
+    window.exportLocalData = function() {
+      const data = JSON.parse(localStorage.getItem('waitlist') || '[]');
+      if (data.length === 0) {
+        alert('Nessun dato da esportare');
+        return;
+      }
+      
+      const csv = 'Nome,Email,Data\n' + 
+        data.map(row => `"${row.name}","${row.email}","${row.timestamp}"`).join('\n');
+      
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'waitlist.csv';
+      a.click();
+      window.URL.revokeObjectURL(url);
+    };
   </script>
 </body>
 </html>
