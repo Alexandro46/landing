@@ -196,8 +196,8 @@
   </section>
 
   <script>
-    // Configurazione - SOSTITUISCI CON IL TUO URL DEL GOOGLE APPS SCRIPT
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyWEgWaoB-ItUGfxgYWfMFKqUxDFsDMQHOM-ZXJ9RIHxm5FcV-c60EHeuGSZIOm4q1qag/exec';
+    // Configurazione Google Apps Script - SOSTITUISCI CON IL TUO URL
+    const SCRIPT_URL = 'https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec';
     
     // Funzione per mostrare messaggi
     function showMessage(text, type = 'success') {
@@ -243,28 +243,26 @@
         formData.append('email', emailInput.value.trim());
         formData.append('timestamp', new Date().toLocaleString('it-IT'));
         
-        // Invia i dati (commentato perché serve il tuo script ID)
-        /*
-        const response = await fetch(SCRIPT_URL, {
-          method: 'POST',
-          body: formData
+        // Invia i dati a Google Apps Script
+        console.log('Invio dati a:', SCRIPT_URL);
+        console.log('Dati da inviare:', {
+          name: formData.get('name'),
+          email: formData.get('email'),
+          timestamp: formData.get('timestamp')
         });
         
-        if (response.ok) {
-          showMessage('Iscrizione completata! Ti contatteremo presto.', 'success');
-          nameInput.value = '';
-          emailInput.value = '';
-        } else {
-          throw new Error('Errore del server');
-        }
-        */
+        const response = await fetch(SCRIPT_URL, {
+          method: 'POST',
+          body: formData,
+          mode: 'no-cors' // Importante per Google Apps Script
+        });
         
-        // TEMPORANEO: Simula invio riuscito
-        // Rimuovi questa parte quando attivi Google Sheets
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        // Con no-cors non possiamo leggere la risposta, quindi assumiamo successo
         showMessage('Iscrizione completata! Ti contatteremo presto.', 'success');
         nameInput.value = '';
         emailInput.value = '';
+        
+        console.log('Dati inviati con successo!');
         
         // Salva temporaneamente nei dati locali (rimuovi quando usi Google Sheets)
         const existingData = JSON.parse(localStorage.getItem('waitlist') || '[]');
@@ -304,6 +302,9 @@
       a.click();
       window.URL.revokeObjectURL(url);
     };
+  </script>
+</body>
+</html>
   </script>
 </body>
 </html>
